@@ -28,6 +28,7 @@
 						<b-dropdown size="lg"  variant="link" right toggle-class="text-decoration-none" no-caret>
 							<template slot="button-content">&#x2630;<span class="sr-only">Menu</span></template>
 							<b-dropdown-item href="#" @click.stop="bulk_install()">Bulk Install</b-dropdown-item>
+							<b-dropdown-item href="#" @click.stop="login()">Login</b-dropdown-item>
 						</b-dropdown>
 					</b-col>
 				</b-row>
@@ -169,6 +170,10 @@
 						</b-row>
 					</b-container>
 				</form>
+			</b-modal>
+			<b-modal id="modalLogin" ref="modalLogin" title="Login" @ok="handleLoginOk" data-ds-keyboard="false" data-ds-backdrop="static">
+				<input v-model="email" type="email" placeholder="Email" required />
+            	<input v-model="password" type="password" placeholder="Password" required />
 			</b-modal>
 		</b-container>
 

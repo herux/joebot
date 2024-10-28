@@ -36,6 +36,9 @@ new Vue({
 		targetSSHUser: null,
 		targetSSHPassword: null,
 		targetSSHKeyContent: null,
+
+		email: null,
+		password: null,
 	},
 	
 	created: function() {
@@ -223,6 +226,18 @@ new Vue({
 			this.$refs.modalCreateTunnel.hide();
 			this.targetClientId = null;
 			this.targetClientPortToBeCreated = null;
+		},
+		login () {
+			this.email = "";
+			this.password = "";
+			this.$refs.modalLogin.show();
+		},
+		handleLoginOk (evt) {
+			if (this.email === 'user@email.com' && this.password === '123') {
+				alert('Login successful');
+			} else {
+				this.error = 'Invalid email or password';
+			}
 		}
 	}
 });
