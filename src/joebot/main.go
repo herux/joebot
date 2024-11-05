@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -57,26 +55,26 @@ func main() {
 				return false, nil
 			}))
 		}
-		webPortalAssetsFS := WebPortalAssetsFS()
+		// webPortalAssetsFS := WebPortalAssetsFS()
 
 		v1.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 			AllowOrigins: []string{"*"},
 			AllowMethods: []string{echo.GET, echo.HEAD, echo.PUT, echo.PATCH, echo.POST, echo.DELETE},
 		}))
 		e.GET("/", func(c echo.Context) error {
-			f, err := webPortalAssetsFS.Open("index.html")
-			if err != nil {
-				log.Fatal(err)
-			}
-			defer f.Close()
-			b, err := io.ReadAll(f)
-			if err != nil {
-				log.Fatal(err)
-			}
-			return c.HTML(200, string(b))
+			// f, err := webPortalAssetsFS.Open("index.html")
+			// if err != nil {
+			// 	log.Fatal(err)
+			// }
+			// defer f.Close()
+			// b, err := io.ReadAll(f)
+			// if err != nil {
+			// 	log.Fatal(err)
+			// }
+			return c.HTML(200, "") //string(b))
 		})
 		// e.GET("/*", echo.WrapHandler(joebot_html.Handler))
-		e.GET("/*", echo.WrapHandler(http.FileServer(http.FS(webPortalAssetsFS))))
+		// e.GET("/*", echo.WrapHandler(http.FileServer(http.FS(webPortalAssetsFS))))
 		v1.GET("/clients", func(c echo.Context) error {
 			return c.JSON(http.StatusOK, s.GetClientsList())
 		})

@@ -95,7 +95,7 @@ func (server *Server) GetClientById(id string) (*Client, error) {
 			return client, nil
 		}
 	}
-	return nil, errors.New("Cleint ID Not Found: " + id)
+	return nil, errors.New("Client ID Not Found: " + id)
 }
 
 func (server *Server) AddClient(client *Client) {

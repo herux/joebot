@@ -11,7 +11,7 @@
 		<link type="text/css" rel="stylesheet" href="bootstrap-vue.css"/>
 
 		<script src="vue.min.js"></script>
-		<script src="//polyfill.io/v3/polyfill.min.js?features=es2015%2CIntersectionObserver" crossorigin="anonymous"></script>
+		<script src="polyfill.min.js" crossorigin="anonymous"></script>
 		<script src="bootstrap-vue.js"></script>
 		<script src="vue-resource.js"></script>
 		<script src="axios.min.js"></script>
@@ -19,7 +19,7 @@
 	<body>
 		<b-container fluid id="clients_list">
 			<br/>
-			<b-container fluid>
+			<b-container fluid v-if="isLoggedIn">
 				<b-row>
 					<b-col>
 						<b-form-input v-model="filter" type="text" placeholder="Type to Search"></b-form-input>
@@ -28,7 +28,6 @@
 						<b-dropdown size="lg"  variant="link" right toggle-class="text-decoration-none" no-caret>
 							<template slot="button-content">&#x2630;<span class="sr-only">Menu</span></template>
 							<b-dropdown-item href="#" @click.stop="bulk_install()">Bulk Install</b-dropdown-item>
-							<b-dropdown-item href="#" @click.stop="login()">Login</b-dropdown-item>
 						</b-dropdown>
 					</b-col>
 				</b-row>
@@ -47,6 +46,7 @@
 					:sort-by.sync="sortBy"
 					:sort-desc.sync="sortDesc"
 					@filtered="onFiltered"
+					v-if="isLoggedIn"
 					>
 				<template slot="HEAD_id" slot-scope="data">
 					<label class="form-checkbox">
@@ -171,9 +171,26 @@
 					</b-container>
 				</form>
 			</b-modal>
-			<b-modal id="modalLogin" ref="modalLogin" title="Login" @ok="handleLoginOk" data-ds-keyboard="false" data-ds-backdrop="static">
-				<input v-model="email" type="email" placeholder="Email" required />
-            	<input v-model="password" type="password" placeholder="Password" required />
+			<b-modal id="modalLogin" ref="modalLogin" title="Login" @ok="handleLoginOk" :no-close-on-backdrop="true">
+				<b-container fluid>
+					<b-row>
+						<b-col sm="3">
+							<label for="email">Email</label>
+							<input v-model="email" type="email" placeholder="Email" required />
+						</b-col>
+					</b-row>
+					<b-row>
+						<b-col sm="3">
+							<label for="password">Password</label>
+							<input v-model="password" type="password" placeholder="Password" required />
+						</b-col>
+					</b-row>
+					<b-row v-if="loginError">
+						<b-col>
+						  <p style="color: red;">{{ loginError }}</p>  <!-- Display error message -->
+						</b-col>
+					</b-row>
+				</b-container>
 			</b-modal>
 		</b-container>
 

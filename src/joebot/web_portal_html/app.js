@@ -6,6 +6,7 @@ new Vue({
 	el: '#clients_list',
 
 	data: {
+		isLoggedIn: false,
 		items: clients,
 		fields: [
 			{ key: 'id', label: 'ID', sortable: true, tdAttr: {style:"width:9%;word-break:break-all;word-wrap:break-word;"} },
@@ -39,6 +40,15 @@ new Vue({
 
 		email: null,
 		password: null,
+		loginError: ''
+	},
+
+	mounted: function() {
+		this.$nextTick(() => {
+			if (!this.isLoggedIn) {
+				this.login();
+			}
+		});
 	},
 	
 	created: function() {
@@ -131,8 +141,6 @@ new Vue({
 			this.$refs.modalInitBulkInstall.show();
 		},
 		handleInitBulkInstallOk (evt) {
-			console.log("handleInitBulkInstallOk");
-
 			let bulkInstallInfo = {
 				'JoebotServerIP': null,
 				'JoebotServerPort': 13579,
@@ -183,9 +191,6 @@ new Vue({
 			this.handleSubmitInitBulkInstall(bulkInstallInfo);
 		},
 		handleSubmitInitBulkInstall (bulkInstallInfo) {
-			console.log("handleSubmitInitBulkInstall");
-
-			console.log(JSON.stringify(bulkInstallInfo, null, 3));
 			axios.post('/api/bulk-install', bulkInstallInfo)
 			.then(function (response) {
 				console.log(response);
@@ -228,15 +233,22 @@ new Vue({
 			this.targetClientPortToBeCreated = null;
 		},
 		login () {
-			this.email = "";
-			this.password = "";
-			this.$refs.modalLogin.show();
+			if (this.$refs.modalLogin) {
+				this.email = "";
+				this.password = "";
+				this.$refs.modalLogin.show();
+			}
 		},
 		handleLoginOk (evt) {
-			if (this.email === 'user@email.com' && this.password === '123') {
-				alert('Login successful');
+			const isAuthValid = this.email === 'user@email.com' && this.password === '123';
+			console.log('isAuthValid', isAuthValid);
+			if (isAuthValid) {
+				this.isLoggedIn = true;
+				this.$refs.modalLogin.hide();
 			} else {
 				this.error = 'Invalid email or password';
+				this.isLoggedIn = false;
+				this.login();
 			}
 		}
 	}
