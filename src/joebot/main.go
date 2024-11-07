@@ -71,12 +71,21 @@ func main() {
 			// if err != nil {
 			// 	log.Fatal(err)
 			// }
-			return c.HTML(200, "") //string(b))
+			// return c.HTML(200, string(b))
+			return c.HTML(200, "")
 		})
 		// e.GET("/*", echo.WrapHandler(joebot_html.Handler))
 		// e.GET("/*", echo.WrapHandler(http.FileServer(http.FS(webPortalAssetsFS))))
 		v1.GET("/clients", func(c echo.Context) error {
 			return c.JSON(http.StatusOK, s.GetClientsList())
+		})
+		v1.POST("/login", func(c echo.Context) error {
+			username, password := c.FormValue("username"), c.FormValue("password")
+			res, err := s.UserLogin(username, password)
+			if err != nil {
+				return c.JSON(http.StatusBadRequest, err)
+			}
+			return c.JSON(http.StatusOK, res)
 		})
 		v1.POST("/client/:id", func(c echo.Context) error {
 			type msg struct {

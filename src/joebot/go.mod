@@ -7,7 +7,7 @@ replace (
 	github.com/yudai/hcl => ../yudai/hcl
 )
 
-go 1.22
+go 1.23
 
 require (
 	github.com/asdine/storm v2.1.2+incompatible
@@ -21,8 +21,8 @@ require (
 	github.com/spf13/afero v1.2.2
 	github.com/twinj/uuid v1.0.0
 	github.com/yudai/gotty v0.0.0-00010101000000-000000000000
-	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a
-	golang.org/x/net v0.0.0-20210525063256-abc453219eb5
+	golang.org/x/crypto v0.28.0
+	golang.org/x/net v0.30.0
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 )
 
@@ -118,8 +118,8 @@ require (
 	github.com/yudai/hcl v0.0.0-00010101000000-000000000001 // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
 	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8 // indirect
-	golang.org/x/sys v0.0.0-20210423082822-04245dca01da // indirect
-	golang.org/x/text v0.3.6 // indirect
+	golang.org/x/sys v0.26.0 // indirect
+	golang.org/x/text v0.19.0 // indirect
 	gopkg.in/square/go-jose.v2 v2.2.2 // indirect
 	gopkg.in/stretchr/testify.v1 v1.2.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

@@ -89,6 +89,16 @@ func (server *Server) GetClientsList() models.ClientCollection {
 	return clientCollection
 }
 
+func (server *Server) UserLogin(username, password string) (models.UserResponse, error) {
+	var userResp models.UserResponse
+	userResp = models.UserResponse{
+		Username: username,
+		Token:    "",
+	}
+
+	return userResp, nil
+}
+
 func (server *Server) GetClientById(id string) (*Client, error) {
 	for _, client := range server.clients {
 		if client.ID == id {
