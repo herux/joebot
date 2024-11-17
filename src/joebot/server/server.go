@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"math/rand"
@@ -11,8 +12,10 @@ import (
 	"time"
 
 	"github.com/harmonicinc-com/joebot/models"
+	"github.com/harmonicinc-com/joebot/repository"
 	"github.com/harmonicinc-com/joebot/sshconnect"
 	"github.com/harmonicinc-com/joebot/utils"
+	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/twinj/uuid"
@@ -27,6 +30,7 @@ type Server struct {
 
 	sync.RWMutex         // Mutex lock for creating tunnel
 	gostTunnelStartIndex int
+	db                   *sqlx.DB
 
 	clients         []*Client
 	clientsListLock chan bool
@@ -45,6 +49,7 @@ func NewServer(logger *logrus.Logger) *Server {
 	server.portsManager = utils.NewPortsManager()
 	server.gostTunnels = []*GostTunnel{}
 	server.gostTunnelStartIndex = 0
+	server.InitDB()
 
 	server.clientsListLock = make(chan bool, 1)
 	server.clientsListLock <- true
@@ -89,14 +94,24 @@ func (server *Server) GetClientsList() models.ClientCollection {
 	return clientCollection
 }
 
-func (server *Server) UserLogin(username, password string) (models.UserResponse, error) {
-	var userResp models.UserResponse
-	userResp = models.UserResponse{
-		Username: username,
-		Token:    "",
+func (server *Server) GetAllUser() ([]*models.UserInfo, error) {
+	userRepo := repository.New(server.db)
+	userResp, err := userRepo.GetAll(context.Background())
+	if err != nil {
+		return []*models.UserInfo{}, err
 	}
 
 	return userResp, nil
+}
+
+func (server *Server) UserLogin(username, password string) (models.UserResponse, error) {
+	userRepo := repository.New(server.db)
+	userResp, err := userRepo.GetUserByUserPassword(context.Background(), username, password)
+	if err != nil {
+		return models.UserResponse{}, err
+	}
+
+	return *userResp, nil
 }
 
 func (server *Server) GetClientById(id string) (*Client, error) {
@@ -261,4 +276,51 @@ func (server *Server) BulkInstallJoebot(info models.BulkInstallInfo) (string, er
 	}
 
 	return "", nil
+}
+
+func (server *Server) InitDB() {
+	db, err := sqlx.Open("sqlite", "joebot.db")
+	if err != nil {
+		return
+	}
+	server.db = db
+
+	schema := `
+		CREATE TABLE IF NOT EXISTS user_info (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			username TEXT NOT NULL UNIQUE,
+			password TEXT NOT NULL,
+			is_admin BOOLEAN NOT NULL,
+			token TEXT,
+			ip_whitelisted TEXT
+		);`
+
+	_, err = db.Exec(schema)
+	if err != nil {
+		return
+	}
+
+	// init admin user if not exist
+	adminUser := models.UserInfo{
+		Username:      "joebot",
+		Password:      "joebot123",
+		IsAdmin:       true,
+		Token:         "",
+		IpWhitelisted: "",
+	}
+	userRepo := repository.New(db)
+	user, err := userRepo.GetUserByUsername(context.Background(), adminUser.Username)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			log.Println("Admin user not found, creating it...")
+			if err := userRepo.Create(context.Background(), &adminUser); err != nil {
+				log.Fatalf("Failed to create admin user: %v", err)
+			}
+			log.Println("Admin user created successfully")
+		} else {
+			log.Fatalf("Error fetching admin user: %v", err)
+		}
+	} else {
+		log.Printf("Admin user already exists: %+v", user)
+	}
 }

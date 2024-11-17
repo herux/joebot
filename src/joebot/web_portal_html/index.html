@@ -28,12 +28,12 @@
 						<b-dropdown size="lg"  variant="link" right toggle-class="text-decoration-none" no-caret>
 							<template slot="button-content">&#x2630;<span class="sr-only">Menu</span></template>
 							<b-dropdown-item href="#" @click.stop="bulk_install()">Bulk Install</b-dropdown-item>
+							<b-dropdown-item href="#" @click.stop="users()">Users</b-dropdown-item>
 						</b-dropdown>
 					</b-col>
 				</b-row>
 			</b-container>
 			<br/>
-			<!--<div class="text-uppercase text-bold">id selected: {{selected}}</div>-->
 			<b-table show-empty
 					stacked="md"
 					:items="items"
@@ -46,7 +46,7 @@
 					:sort-by.sync="sortBy"
 					:sort-desc.sync="sortDesc"
 					@filtered="onFiltered"
-					v-if="isLoggedIn"
+					v-if="isLoggedIn && isBulkIntallView"
 					>
 				<template slot="HEAD_id" slot-scope="data">
 					<label class="form-checkbox">
@@ -98,6 +98,22 @@
 						Create Tunnel
 					</b-button>
 				</template>
+			</b-table>
+
+			<b-table
+				show-empty
+				stacked="md"
+				:items="userArray"
+				:fields="userFields"
+				:current-page="currentPage"
+				:per-page="perPage"
+				:filter="filter"
+				:small="true"
+				:hover="true"
+				:sort-by.sync="sortBy"
+				:sort-desc.sync="sortDesc"
+				v-if="isLoggedIn && isUsersView">
+
 			</b-table>
 
 			<b-modal id="modalInfo" @hide="resetModal" :title="modalInfo.title" ok-only>
@@ -173,23 +189,25 @@
 			</b-modal>
 			<b-modal id="modalLogin" ref="modalLogin" title="Login" @ok="handleLoginOk" :no-close-on-backdrop="true">
 				<b-container fluid>
-					<b-row>
-						<b-col sm="3">
-							<label for="email">Email</label>
-							<input v-model="email" type="email" placeholder="Email" required />
-						</b-col>
-					</b-row>
-					<b-row>
-						<b-col sm="3">
-							<label for="password">Password</label>
-							<input v-model="password" type="password" placeholder="Password" required />
-						</b-col>
-					</b-row>
-					<b-row v-if="loginError">
-						<b-col>
-						  <p style="color: red;">{{ loginError }}</p>  <!-- Display error message -->
-						</b-col>
-					</b-row>
+					<form @submit.stop.prevent="handleLoginOk">
+						<b-row>
+							<b-col sm="6">
+								<label for="email">Email</label>
+								<b-form-input type="text" placeholder="Email / Username" v-model="email"></b-form-input>
+							</b-col>
+						</b-row>
+						<b-row>
+							<b-col sm="6">
+								<label for="password">Password</label>
+								<b-form-input type="password" placeholder="Password" v-model="password"></b-form-input>
+							</b-col>
+						</b-row>
+						<b-row v-if="loginError">
+							<b-col>
+							  <p style="color: red;">{{ loginError }}</p> 
+							</b-col>
+						</b-row>
+					</form>
 				</b-container>
 			</b-modal>
 		</b-container>

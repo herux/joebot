@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -55,29 +57,36 @@ func main() {
 				return false, nil
 			}))
 		}
-		// webPortalAssetsFS := WebPortalAssetsFS()
+		webPortalAssetsFS := WebPortalAssetsFS()
 
 		v1.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 			AllowOrigins: []string{"*"},
 			AllowMethods: []string{echo.GET, echo.HEAD, echo.PUT, echo.PATCH, echo.POST, echo.DELETE},
 		}))
 		e.GET("/", func(c echo.Context) error {
-			// f, err := webPortalAssetsFS.Open("index.html")
-			// if err != nil {
-			// 	log.Fatal(err)
-			// }
-			// defer f.Close()
-			// b, err := io.ReadAll(f)
-			// if err != nil {
-			// 	log.Fatal(err)
-			// }
-			// return c.HTML(200, string(b))
-			return c.HTML(200, "")
+			f, err := webPortalAssetsFS.Open("index.html")
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer f.Close()
+			b, err := io.ReadAll(f)
+			if err != nil {
+				log.Fatal(err)
+			}
+			return c.HTML(200, string(b))
 		})
 		// e.GET("/*", echo.WrapHandler(joebot_html.Handler))
-		// e.GET("/*", echo.WrapHandler(http.FileServer(http.FS(webPortalAssetsFS))))
+		e.GET("/*", echo.WrapHandler(http.FileServer(http.FS(webPortalAssetsFS))))
 		v1.GET("/clients", func(c echo.Context) error {
 			return c.JSON(http.StatusOK, s.GetClientsList())
+		})
+		v1.GET("/users", func(c echo.Context) error {
+			res, err := s.GetAllUser()
+			if err != nil {
+				return c.JSON(http.StatusBadRequest, err)
+			}
+
+			return c.JSON(http.StatusOK, res)
 		})
 		v1.POST("/login", func(c echo.Context) error {
 			username, password := c.FormValue("username"), c.FormValue("password")

@@ -7,7 +7,10 @@ new Vue({
 
 	data: {
 		isLoggedIn: false,
+		isBulkIntallView: true,
+		isUsersView: false,
 		items: clients,
+		userArray: [],
 		fields: [
 			{ key: 'id', label: 'ID', sortable: true, tdAttr: {style:"width:9%;word-break:break-all;word-wrap:break-word;"} },
 			{ key: 'ip', label: 'IP', sortable: true, tdAttr: {style:"width:8%;word-break:break-all;word-wrap:break-word;"} },
@@ -16,6 +19,13 @@ new Vue({
 			{ key: 'port_tunnels', label: 'Port Tunnels', sortable: false, tdAttr: {style:"width:15%;word-break:break-all;word-wrap:break-word;"} },
 			{ key: 'tags', label: 'Tags', sortable: false, tdAttr: {style:"width:30%;word-break:break-all;word-wrap:break-word;"} },
 			{ key: 'actions', label: 'Actions', tdAttr: {style:"width:23%;word-break:break-all;word-wrap:break-word;"} }
+		],
+		userFields: [
+			{ key: 'ID', label: 'ID', sortable: true, tdAttr: {style:"width:9%;word-break:break-all;word-wrap:break-word;"} },
+			{ key: 'Username', label: 'Username', sortable: true, tdAttr: {style:"width:9%;word-break:break-all;word-wrap:break-word;"} },
+			{ key: 'Password', label: 'Password', sortable: false, tdAttr: {style:"width:9%;word-break:break-all;word-wrap:break-word;"} },
+			{ key: 'IsAdmin', label: 'IsAdmin', sortable: false, tdAttr: {style:"width:9%;word-break:break-all;word-wrap:break-word;"} },
+			{ key: 'IpWhitelisted', label: 'IpWhitelisted', sortable: false, tdAttr: {style:"width:9%;word-break:break-all;word-wrap:break-word;"} },
 		],
 		currentPage: 1,
 		perPage: 99999,
@@ -50,8 +60,24 @@ new Vue({
 			}
 		});
 	},
+
+	watch: function() {
+		console.log('watch')
+	},
 	
 	created: function() {
+		const token = this.getCookie("authToken");
+		if (token) {
+			this.isLoggedIn = true; 
+		} else {
+			this.$nextTick(() => this.$refs.modalLogin.show());
+		}
+		const updateUserTable = () => {
+			this.$http.get('/api/users').then(result => {
+				this.userArray = result.body;
+			});
+		};
+
 		const updateTable = () => {
 			this.$http.get('/api/clients').then(result => {
 				let clients = result.body.clients;
@@ -88,6 +114,8 @@ new Vue({
 
 		updateTable();
 		setInterval(() => updateTable(), 1000);
+
+		updateUserTable();
 	},
 	
 	methods: {
@@ -131,14 +159,21 @@ new Vue({
 			this.totalRows = filteredItems.length;
 			this.currentPage = 1;
 		},
-		
+		users () {
+			this.isBulkIntallView = false;
+			this.isUsersView = true;
+			console.log('users: ', this.isBulkIntallView, this.isUsersView);
+		},
 		bulk_install () {
+			this.isBulkIntallView = true;
+			this.isUsersView = false;
 			this.targetJoebotServerAddr = location.hostname + ":13579",
 			this.targetIPList = "";
 			this.targetSSHUser = "";
 			this.targetSSHPassword = "";
 			this.targetSSHKeyContent = "";
 			this.$refs.modalInitBulkInstall.show();
+			console.log('bulk_install: ', this.isBulkIntallView, this.isUsersView);
 		},
 		handleInitBulkInstallOk (evt) {
 			let bulkInstallInfo = {
@@ -240,16 +275,38 @@ new Vue({
 			}
 		},
 		handleLoginOk (evt) {
-			const isAuthValid = this.email === 'user@email.com' && this.password === '123';
-			console.log('isAuthValid', isAuthValid);
-			if (isAuthValid) {
-				this.isLoggedIn = true;
-				this.$refs.modalLogin.hide();
-			} else {
-				this.error = 'Invalid email or password';
-				this.isLoggedIn = false;
-				this.login();
-			}
-		}
+			let data = new FormData();
+			data.set("username", this.email);
+			data.set("password", this.password);
+
+			this.$http.post(`/api/login`, data).then((response) => {
+				console.log(`Login response: \n${JSON.stringify(response.body, null, 3)}`);
+				if (response.body && response.body.token) {
+					this.setCookie("authToken", response.body.token, 7); // Save token for 7 days
+					this.isLoggedIn = true;
+					this.$refs.modalLogin.hide();
+				} else {
+					this.loginError = "Login failed. Please check your credentials.";
+				}
+			});
+		},
+		logout() {
+			this.deleteCookie("authToken");
+			this.isLoggedIn = false;
+			this.$nextTick(() => this.$refs.modalLogin.show());
+		},
+		setCookie(name, value, days) {
+			const date = new Date();
+			date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+			document.cookie = `${name}=${value};expires=${date.toUTCString()};path=/`;
+		},
+		getCookie(name) {
+			const value = `; ${document.cookie}`;
+			const parts = value.split(`; ${name}=`);
+			if (parts.length === 2) return parts.pop().split(";").shift();
+		},
+		deleteCookie(name) {
+			document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/`;
+		},
 	}
 });

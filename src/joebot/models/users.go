@@ -3,11 +3,12 @@ package models
 import "time"
 
 type UserInfo struct {
-	Username      string   `json:"username"`
-	Password      string   `json:"password"`
-	IsAdmin       bool     `json:"isadmin"`
-	Token         string   `json:"token"`
-	IpWhitelisted []string `json:"ipwhitelisted"`
+	ID            int    `db:"id"`
+	Username      string `db:"username"`
+	Password      string `db:"password"`
+	IsAdmin       bool   `db:"is_admin"`
+	Token         string `db:"token"`
+	IpWhitelisted string `db:"ip_whitelisted"`
 }
 
 type UserResponse struct {
