@@ -187,6 +187,29 @@
 					</b-container>
 				</form>
 			</b-modal>
+			<b-modal id="modalUser" ref="modalUser" title="Add User" @ok="handleAddUserOk" size="l">
+				<b-container fluid>
+					<form @submit.stop.prevent="handleAddUserOk">
+						<b-row>
+							<b-col sm="6">
+								<label for="email">Email</label>
+								<b-form-input type="text" placeholder="Email / Username" v-model="email"></b-form-input>
+							</b-col>
+						</b-row>
+						<b-row>
+							<b-col sm="6">
+								<label for="password">Password</label>
+								<b-form-input type="text" placeholder="Password" v-model="password"></b-form-input>
+							</b-col>
+						</b-row>
+						<b-row>
+							<b-col sm="6">
+								<b-form-checkbox v-model="isadmin">IsAdmin</b-form-checkbox>
+							</b-col>
+						</b-row>
+					</form>
+				</b-container>
+			</b-modal>
 			<b-modal id="modalLogin" ref="modalLogin" title="Login" @ok="handleLoginOk" :no-close-on-backdrop="true">
 				<b-container fluid>
 					<form @submit.stop.prevent="handleLoginOk">

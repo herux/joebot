@@ -50,7 +50,8 @@ new Vue({
 
 		email: null,
 		password: null,
-		loginError: ''
+		loginError: '',
+		isadmin: false,
 	},
 
 	mounted: function() {
@@ -162,7 +163,13 @@ new Vue({
 		users () {
 			this.isBulkIntallView = false;
 			this.isUsersView = true;
-			console.log('users: ', this.isBulkIntallView, this.isUsersView);
+			this.$refs.modalUser.show();
+		},
+		addUser () {
+			this.$refs.modalUser.show();
+		},
+		handleAddUserOk () {
+
 		},
 		bulk_install () {
 			this.isBulkIntallView = true;
