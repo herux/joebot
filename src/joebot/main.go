@@ -80,6 +80,22 @@ func main() {
 		v1.GET("/clients", func(c echo.Context) error {
 			return c.JSON(http.StatusOK, s.GetClientsList())
 		})
+		v1.GET("/users", func(c echo.Context) error {
+			res, err := s.GetAllUser()
+			if err != nil {
+				return c.JSON(http.StatusBadRequest, err)
+			}
+
+			return c.JSON(http.StatusOK, res)
+		})
+		v1.POST("/login", func(c echo.Context) error {
+			username, password := c.FormValue("username"), c.FormValue("password")
+			res, err := s.UserLogin(username, password)
+			if err != nil {
+				return c.JSON(http.StatusBadRequest, err)
+			}
+			return c.JSON(http.StatusOK, res)
+		})
 		v1.POST("/client/:id", func(c echo.Context) error {
 			type msg struct {
 				Message string `json:"message"`
