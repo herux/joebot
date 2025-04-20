@@ -104,6 +104,26 @@ func (server *Server) GetAllUser() ([]*models.UserInfo, error) {
 	return userResp, nil
 }
 
+func (server *Server) CreateUser(user models.UserInfo) error {
+	userRepo := repository.New(server.db)
+	userResp, err := userRepo.GetUserByUsername(context.Background(), user.Username)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			// User not found, proceed to create
+			if err := userRepo.Create(context.Background(), &user); err != nil {
+				return errors.Wrap(err, "Failed to create user")
+			}
+			server.logger.Info("User Created: " + user.Username)
+			return nil
+		} else {
+			return errors.Wrap(err, "Error fetching user")
+		}
+	} else {
+		// User already exists
+		return errors.New("User already exists: " + userResp.Username)
+	}
+}
+
 func (server *Server) UserLogin(username, password string) (models.UserResponse, error) {
 	userRepo := repository.New(server.db)
 	userResp, err := userRepo.GetUserByUserPassword(context.Background(), username, password)

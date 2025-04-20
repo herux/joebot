@@ -88,6 +88,17 @@ func main() {
 
 			return c.JSON(http.StatusOK, res)
 		})
+		v1.POST("/users", func(c echo.Context) error {
+			// insert new user
+			json := models.UserInfo{}
+			if err := c.Bind(&json); err != nil {
+				return err
+			}
+			if err := s.CreateUser(json); err != nil {
+				return c.JSON(http.StatusBadRequest, err)
+			}
+			return c.JSON(http.StatusOK, json)
+		})
 		v1.POST("/login", func(c echo.Context) error {
 			username, password := c.FormValue("username"), c.FormValue("password")
 			res, err := s.UserLogin(username, password)

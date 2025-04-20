@@ -12,7 +12,7 @@ new Vue({
 		items: clients,
 		userArray: [],
 		fields: [
-			{ key: 'id', label: 'ID', sortable: true, tdAttr: {style:"width:9%;word-break:break-all;word-wrap:break-word;"} },
+			{ key: 'ID', label: 'ID', sortable: true, tdAttr: {style:"width:9%;word-break:break-all;word-wrap:break-word;"} },
 			{ key: 'ip', label: 'IP', sortable: true, tdAttr: {style:"width:8%;word-break:break-all;word-wrap:break-word;"} },
 			{ key: 'host_name', label: 'Hostname', sortable: true, tdAttr: {style:"width:10%;word-break:break-all;word-wrap:break-word;"} },
 			{ key: 'username', label: 'User', sortable: true, tdAttr: {style:"width:5%;word-break:break-all;word-wrap:break-word;"} },
@@ -23,9 +23,8 @@ new Vue({
 		userFields: [
 			{ key: 'ID', label: 'ID', sortable: true, tdAttr: {style:"width:9%;word-break:break-all;word-wrap:break-word;"} },
 			{ key: 'Username', label: 'Username', sortable: true, tdAttr: {style:"width:9%;word-break:break-all;word-wrap:break-word;"} },
-			{ key: 'Password', label: 'Password', sortable: false, tdAttr: {style:"width:9%;word-break:break-all;word-wrap:break-word;"} },
-			{ key: 'IsAdmin', label: 'IsAdmin', sortable: false, tdAttr: {style:"width:9%;word-break:break-all;word-wrap:break-word;"} },
-			{ key: 'IpWhitelisted', label: 'IpWhitelisted', sortable: false, tdAttr: {style:"width:9%;word-break:break-all;word-wrap:break-word;"} },
+			{ key: 'IsAdmin', label: 'Admin', sortable: false, tdAttr: {style:"width:9%;word-break:break-all;word-wrap:break-word;"} },
+			{ key: 'IpWhitelisted', label: 'IP Whitelisted', sortable: false, tdAttr: {style:"width:9%;word-break:break-all;word-wrap:break-word;"} },
 		],
 		currentPage: 1,
 		perPage: 99999,
@@ -169,7 +168,20 @@ new Vue({
 			this.$refs.modalUser.show();
 		},
 		handleAddUserOk () {
+			let data = new FormData();
+			data.set("username", this.email);
+			data.set("password", this.password);
 
+			this.$http.post(`/api/users`, data).then((response) => {
+				console.log(`Add user response: \n${JSON.stringify(response.body, null, 3)}`);
+				if (response.body && response.body.token) {
+					// this.setCookie("authToken", response.body.token, 7); // Save token for 7 days
+					// this.isLoggedIn = true;
+					this.$refs.modalUser.hide();
+				} else {
+					this.loginError = "Login failed. Please check your credentials.";
+				}
+			});
 		},
 		bulk_install () {
 			this.isBulkIntallView = true;
