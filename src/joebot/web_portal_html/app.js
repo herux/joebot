@@ -112,10 +112,13 @@ new Vue({
 			this.filter = captured[1] ? decodeURIComponent(captured[1]) : null;
 		}
 
-		updateTable();
-		setInterval(() => updateTable(), 1000);
-
-		updateUserTable();
+		// updateTable();
+		setInterval(() => { 
+			if (this.isLoggedIn){
+				updateTable();
+				updateUserTable();
+			}
+		}, 1000);
 	},
 	
 	methods: {
@@ -173,13 +176,10 @@ new Vue({
 			data.set("password", this.password);
 
 			this.$http.post(`/api/users`, data).then((response) => {
-				console.log(`Add user response: \n${JSON.stringify(response.body, null, 3)}`);
 				if (response.body && response.body.token) {
-					// this.setCookie("authToken", response.body.token, 7); // Save token for 7 days
-					// this.isLoggedIn = true;
 					this.$refs.modalUser.hide();
 				} else {
-					this.loginError = "Login failed. Please check your credentials.";
+					this.loginError = "Add user failed";
 				}
 			});
 		},
@@ -299,14 +299,16 @@ new Vue({
 			data.set("password", this.password);
 
 			this.$http.post(`/api/login`, data).then((response) => {
-				console.log(`Login response: \n${JSON.stringify(response.body, null, 3)}`);
-				if (response.body && response.body.token) {
-					this.setCookie("authToken", response.body.token, 7); // Save token for 7 days
+				if (response.status === 200 && response.body && response.body.token) {
+					this.setCookie("authToken", response.body.token, 7); 
 					this.isLoggedIn = true;
 					this.$refs.modalLogin.hide();
 				} else {
 					this.loginError = "Login failed. Please check your credentials.";
 				}
+			}).catch((error) => {
+				this.loginError = "Login failed. Please check your credentials.";
+				console.error(error);
 			});
 		},
 		logout() {

@@ -2,10 +2,10 @@ package middleware
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/harmonicinc-com/joebot/repository"
 	"github.com/labstack/echo"
+	"github.com/sirupsen/logrus"
 )
 
 func IPWhitelist(userRepo repository.UserRepository) echo.MiddlewareFunc {
@@ -23,8 +23,14 @@ func IPWhitelist(userRepo repository.UserRepository) echo.MiddlewareFunc {
 			}
 
 			whitelist = fetchWhitelistFromDB(token.Value, userRepo)
-			if len(whitelist) == 0 {
-				return echo.ErrForbidden
+			clientIP := c.RealIP()
+			if clientIP == "::1" {
+				clientIP = "127.0.0.1"
+			}
+			for _, allowedIP := range whitelist {
+				if clientIP == allowedIP {
+					return next(c)
+				}
 			}
 
 			return echo.ErrForbidden
@@ -33,9 +39,19 @@ func IPWhitelist(userRepo repository.UserRepository) echo.MiddlewareFunc {
 }
 
 func fetchWhitelistFromDB(token string, userRepo repository.UserRepository) []string {
-	IPWhitelist, err := userRepo.GetUserIPWhitelist(context.Background(), token)
+	user, err := userRepo.GetUserByToken(context.Background(), token)
 	if err != nil {
-		fmt.Println("Error fetching IP whitelist:", err)
+		logrus.Errorf("Error fetching user by token: %v", err)
+		return []string{}
+	}
+	if user == nil {
+		logrus.Warnf("No user found for token: %s", token)
+		return []string{}
+	}
+
+	IPWhitelist, err := userRepo.GetUserIPWhitelist(context.Background(), user.Username)
+	if err != nil {
+		logrus.Errorf("Error fetching IP whitelist: %v", err)
 		return []string{}
 	}
 

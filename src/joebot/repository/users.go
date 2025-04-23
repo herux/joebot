@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -69,14 +70,20 @@ func (repo *UserRepository) GetUserByUserPassword(ctx context.Context, username,
 	query := `SELECT * FROM user_info WHERE username = ? AND password = ?`
 	err := repo.db.GetContext(ctx, &user, query, username, password)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
+		return nil, err
+	}
+	// check if user is found
+	if user.Username == "" {
+		return nil, errors.New("user not found")
+	}
+	// Generate a JWT token
+	token, err := generateJWT(user.Username)
+	if err != nil {
 		return nil, err
 	}
 
-	// Generate a JWT token
-	token, err := generateJWT(user.Username)
+	// Update the user's token in the database
+	err = repo.UpdateUserToken(ctx, user.Username, token)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +91,7 @@ func (repo *UserRepository) GetUserByUserPassword(ctx context.Context, username,
 	userResp := &models.UserResponse{
 		Username:  user.Username,
 		Token:     token,
-		ExpiredAt: time.Now().Add(24 * time.Hour), // Example expiration time
+		ExpiredAt: time.Now().Add(24 * time.Hour),
 	}
 	return userResp, nil
 }
@@ -136,9 +143,16 @@ func (repo *UserRepository) UpdateUserIPWhitelist(ctx context.Context, username 
 
 func (repo *UserRepository) GetUserIPWhitelist(ctx context.Context, username string) ([]string, error) {
 	var ipWhitelist []string
-	err := repo.db.GetContext(ctx, &ipWhitelist, "SELECT ip_whitelisted FROM user_info WHERE username = ?", username)
+	var ipWhitelistStr string
+	err := repo.db.GetContext(ctx, &ipWhitelistStr, "SELECT ip_whitelisted FROM user_info WHERE username = ?", username)
 	if err != nil {
 		return nil, err
 	}
+
+	ipWhitelist = strings.Split(ipWhitelistStr, ",")
+	if err != nil {
+		return nil, err
+	}
+
 	return ipWhitelist, nil
 }

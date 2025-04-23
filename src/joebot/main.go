@@ -98,6 +98,7 @@ func main() {
 			if err != nil {
 				return c.JSON(http.StatusBadRequest, err)
 			}
+
 			return c.JSON(http.StatusOK, res)
 		})
 		v1.POST("/client/:id", func(c echo.Context) error {
