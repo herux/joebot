@@ -37,6 +37,8 @@ type Server struct {
 
 	ctx  context.Context
 	stop context.CancelFunc
+
+	UserRepo repository.UserRepository
 }
 
 func NewServer(logger *logrus.Logger) *Server {
@@ -329,18 +331,20 @@ func (server *Server) InitDB() {
 		IpWhitelisted: "",
 	}
 	userRepo := repository.New(db)
-	user, err := userRepo.GetUserByUsername(context.Background(), adminUser.Username)
+	server.UserRepo = *userRepo
+	_, err = userRepo.GetUserByUsername(context.Background(), adminUser.Username)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			log.Println("Admin user not found, creating it...")
+			log.Printf("[INFO] Admin user '%s' not found. Proceeding to create...", adminUser.Username)
 			if err := userRepo.Create(context.Background(), &adminUser); err != nil {
-				log.Fatalf("Failed to create admin user: %v", err)
+				log.Fatalf("[ERROR] Failed to create admin user '%s': %v", adminUser.Username, err)
 			}
-			log.Println("Admin user created successfully")
+			log.Printf("[INFO] Admin user '%s' created successfully", adminUser.Username)
 		} else {
-			log.Fatalf("Error fetching admin user: %v", err)
+			log.Fatalf("[ERROR] Unexpected error while fetching admin user '%s': %v", adminUser.Username, err)
 		}
 	} else {
-		log.Printf("Admin user already exists: %+v", user)
+		log.Printf("[INFO] Admin user '%s' already exists", adminUser.Username)
 	}
+
 }

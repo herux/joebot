@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/harmonicinc-com/joebot/client"
+	joebot_middleware "github.com/harmonicinc-com/joebot/middleware"
 	"github.com/harmonicinc-com/joebot/models"
 	"github.com/harmonicinc-com/joebot/server"
 
@@ -24,8 +25,6 @@ var (
 	serverCommand = app.Command("server", "Server Mode")
 	serverPort    = serverCommand.Flag("port", "Port For Listening Slave Machine, Default = 13579").Default("13579").Short('p').Int()
 	webPortalPort = serverCommand.Flag("web-portal-port", "Port For The Web Portal, Default = 8080").Default("8080").Short('w').Int()
-	username      = serverCommand.Flag("user", "Username for login the web portal").String()
-	password      = serverCommand.Flag("pw", "Password for login the web portal").String()
 
 	clientCommand                = app.Command("client", "Client Mode")
 	cServerIP                    = clientCommand.Arg("ip", "Server IP").Required().String()
@@ -49,20 +48,15 @@ func main() {
 		e := echo.New()
 		v1 := e.Group("/api")
 
-		if username != nil && password != nil && *username != "" && *password != "" {
-			v1.Use(middleware.BasicAuth(func(user, pw string, c echo.Context) (bool, error) {
-				if user == *username && pw == *password {
-					return true, nil
-				}
-				return false, nil
-			}))
-		}
 		webPortalAssetsFS := WebPortalAssetsFS()
 
 		v1.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 			AllowOrigins: []string{"*"},
 			AllowMethods: []string{echo.GET, echo.HEAD, echo.PUT, echo.PATCH, echo.POST, echo.DELETE},
 		}))
+
+		v1.Use(joebot_middleware.IPWhitelist(s.UserRepo))
+
 		e.GET("/", func(c echo.Context) error {
 			f, err := webPortalAssetsFS.Open("index.html")
 			if err != nil {
@@ -89,7 +83,6 @@ func main() {
 			return c.JSON(http.StatusOK, res)
 		})
 		v1.POST("/users", func(c echo.Context) error {
-			// insert new user
 			json := models.UserInfo{}
 			if err := c.Bind(&json); err != nil {
 				return err
