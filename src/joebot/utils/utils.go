@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -34,8 +35,8 @@ func BytesToStruct(body []byte, structPtr interface{}) error {
 }
 
 // GetFreePort asks the kernel for a free open port that is ready to use.
-//lbound and ubound specifies the target port range (inclusively)
-//If lbound and ubound are both 0, then random ports would be used
+// lbound and ubound specifies the target port range (inclusively)
+// If lbound and ubound are both 0, then random ports would be used
 func GetFreePort(lbound int, ubound int) (int, error) {
 	targetPort := rand.Intn(ubound-lbound+1) + lbound
 
@@ -88,4 +89,11 @@ func GetCurrentExecutablePath() string {
 func Random(min, max int) int {
 	rand.Seed(time.Now().UTC().UnixNano())
 	return rand.Intn(max-min) + min
+}
+
+func SplitString(s string, sep string) []string {
+	if s == "" {
+		return []string{}
+	}
+	return strings.Split(s, sep)
 }

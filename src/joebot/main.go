@@ -29,6 +29,7 @@ var (
 	clientCommand                = app.Command("client", "Client Mode")
 	cServerIP                    = clientCommand.Arg("ip", "Server IP").Required().String()
 	cServerPort                  = clientCommand.Flag("port", "Server Port, Default=13579").Default("13579").Short('p').Int()
+	cwebPortalPort               = clientCommand.Flag("web-portal-port", "Web Portal Port, Default=8080").Default("8080").Short('w').Int()
 	cAllowedPortRangeLBound      = clientCommand.Flag("allowed-port-lower-bound", "Lower Bound Of Allowed Port Range").Default("0").Short('l').Int()
 	cAllowedPortRangeUBound      = clientCommand.Flag("allowed-port-upper-bound", "Upper Bound Of Allowed Port Range").Default("65535").Short('u').Int()
 	cTags                        = clientCommand.Flag("tag", "Tags").Strings()
@@ -55,7 +56,7 @@ func main() {
 			AllowMethods: []string{echo.GET, echo.HEAD, echo.PUT, echo.PATCH, echo.POST, echo.DELETE},
 		}))
 
-		v1.Use(joebot_middleware.IPWhitelist(s.UserRepo))
+		v1.Use(joebot_middleware.AuthMiddleware)
 
 		e.GET("/", func(c echo.Context) error {
 			f, err := webPortalAssetsFS.Open("index.html")
@@ -82,6 +83,15 @@ func main() {
 
 			return c.JSON(http.StatusOK, res)
 		})
+		v1.GET("/users/ip-whitelisted", func(c echo.Context) error {
+			token := c.Get("token").(string)
+			res, err := s.GetUserIPWhitelisted(token)
+			if err != nil {
+				return c.JSON(http.StatusBadRequest, err)
+			}
+
+			return c.JSON(http.StatusOK, res)
+		})
 		v1.POST("/users", func(c echo.Context) error {
 			json := models.UserInfo{}
 			if err := c.Bind(&json); err != nil {
@@ -94,7 +104,7 @@ func main() {
 		})
 		v1.POST("/login", func(c echo.Context) error {
 			username, password := c.FormValue("username"), c.FormValue("password")
-			res, err := s.UserLogin(username, password)
+			res, err := s.UserLogin(c.RealIP(), username, password)
 			if err != nil {
 				return c.JSON(http.StatusBadRequest, err)
 			}
@@ -140,7 +150,7 @@ func main() {
 	case clientCommand.FullCommand():
 		wg := &sync.WaitGroup{}
 		wg.Add(1)
-		c := client.NewClient(*cServerIP, *cServerPort, *cAllowedPortRangeLBound, *cAllowedPortRangeUBound, *cTags, nil)
+		c := client.NewClient(*cServerIP, *cServerPort, *cwebPortalPort, *cAllowedPortRangeLBound, *cAllowedPortRangeUBound, *cTags, nil)
 		c.FilebrowserDefaultDir = *cFilebrowserDefaultDirectory
 		c.Start()
 		wg.Wait()

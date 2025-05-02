@@ -132,7 +132,7 @@ func (repo *UserRepository) UpdateUserToken(ctx context.Context, username, token
 	return nil
 }
 
-func (repo *UserRepository) UpdateUserIPWhitelist(ctx context.Context, username string, ipWhitelist []string) error {
+func (repo *UserRepository) UpdateUserIPWhitelist(ctx context.Context, username string, ipWhitelist string) error {
 	query := `UPDATE user_info SET ip_whitelisted = ? WHERE username = ?`
 	_, err := repo.db.ExecContext(ctx, query, ipWhitelist, username)
 	if err != nil {

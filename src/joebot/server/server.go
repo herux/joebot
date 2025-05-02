@@ -96,14 +96,63 @@ func (server *Server) GetClientsList() models.ClientCollection {
 	return clientCollection
 }
 
-func (server *Server) GetAllUser() ([]*models.UserInfo, error) {
+type UserInfoResponse struct {
+	Username      string `json:"username"`
+	IsAdmin       bool   `json:"is_admin"`
+	IpWhitelisted string `json:"ip_whitelisted"`
+}
+
+func (server *Server) GetAllUser() ([]*UserInfoResponse, error) {
 	userRepo := repository.New(server.db)
 	userResp, err := userRepo.GetAll(context.Background())
 	if err != nil {
-		return []*models.UserInfo{}, err
+		return []*UserInfoResponse{}, err
 	}
 
-	return userResp, nil
+	userInfoResponses := make([]*UserInfoResponse, 0, len(userResp))
+	for i := range userResp {
+		userInfoResponses = append(userInfoResponses, &UserInfoResponse{
+			Username:      userResp[i].Username,
+			IsAdmin:       userResp[i].IsAdmin,
+			IpWhitelisted: userResp[i].IpWhitelisted,
+		})
+	}
+
+	return userInfoResponses, nil
+}
+
+func (server *Server) GetUserByToken(token string) (*UserInfoResponse, error) {
+	userRepo := repository.New(server.db)
+	userResp, err := userRepo.GetUserByToken(context.Background(), token)
+	if err != nil {
+		return nil, err
+	}
+
+	return &UserInfoResponse{
+		Username:      userResp.Username,
+		IsAdmin:       userResp.IsAdmin,
+		IpWhitelisted: userResp.IpWhitelisted,
+	}, nil
+}
+
+func (server *Server) GetUserIPWhitelisted(token string) ([]string, error) {
+	userRepo := repository.New(server.db)
+	userResp, err := userRepo.GetUserByToken(context.Background(), token)
+	if err != nil {
+		return nil, err
+	}
+
+	ipWhitelisted := userResp.IpWhitelisted
+	if ipWhitelisted == "" {
+		return nil, errors.New("No IP Whitelisted")
+	}
+
+	ipList := []string{}
+	for _, ip := range utils.SplitString(ipWhitelisted, ",") {
+		ipList = append(ipList, ip)
+	}
+
+	return ipList, nil
 }
 
 func (server *Server) CreateUser(user models.UserInfo) error {
@@ -126,9 +175,14 @@ func (server *Server) CreateUser(user models.UserInfo) error {
 	}
 }
 
-func (server *Server) UserLogin(username, password string) (models.UserResponse, error) {
+func (server *Server) UserLogin(ipAddress string, username, password string) (models.UserResponse, error) {
 	userRepo := repository.New(server.db)
 	userResp, err := userRepo.GetUserByUserPassword(context.Background(), username, password)
+	if err != nil {
+		return models.UserResponse{}, err
+	}
+
+	err = userRepo.UpdateUserIPWhitelist(context.Background(), userResp.Username, ipAddress)
 	if err != nil {
 		return models.UserResponse{}, err
 	}

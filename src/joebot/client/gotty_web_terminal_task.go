@@ -1,3 +1,4 @@
+//go:build !windows
 // +build !windows
 
 package client
@@ -47,7 +48,10 @@ func (t *GottyWebTerminalTask) Handle(body []byte, stream net.Conn) error {
 		return errors.Wrap(err, "Gotty Configuration Failed: appOptions")
 	}
 	appOptions.Port = strconv.Itoa(freePort)
+	appOptions.JoebotWebPortalPort = strconv.Itoa(t.handleClient.serverWebPortalPort)
+	appOptions.JoebotWebPortalHost = t.handleClient.serverIP
 	appOptions.EnableBasicAuth = false
+	appOptions.EnableTokenAuth = true
 	appOptions.EnableTLSClientAuth = false
 	appOptions.PermitWrite = true
 	appOptions.WSOrigin = ".*?"

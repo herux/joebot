@@ -12,7 +12,7 @@ new Vue({
 		items: clients,
 		userArray: [],
 		fields: [
-			{ key: 'ID', label: 'ID', sortable: true, tdAttr: {style:"width:9%;word-break:break-all;word-wrap:break-word;"} },
+			{ key: 'id', label: 'ID', sortable: true, tdAttr: {style:"width:9%;word-break:break-all;word-wrap:break-word;"} },
 			{ key: 'ip', label: 'IP', sortable: true, tdAttr: {style:"width:8%;word-break:break-all;word-wrap:break-word;"} },
 			{ key: 'host_name', label: 'Hostname', sortable: true, tdAttr: {style:"width:10%;word-break:break-all;word-wrap:break-word;"} },
 			{ key: 'username', label: 'User', sortable: true, tdAttr: {style:"width:5%;word-break:break-all;word-wrap:break-word;"} },
@@ -72,14 +72,24 @@ new Vue({
 		} else {
 			this.$nextTick(() => this.$refs.modalLogin.show());
 		}
+
 		const updateUserTable = () => {
-			this.$http.get('/api/users').then(result => {
+			const token = this.getCookie("authToken");
+			this.$http.get('/api/users', {
+				headers: {
+					Authorization: `Bearer ${token}`
+				}
+			}).then(result => {
 				this.userArray = result.body;
 			});
 		};
 
 		const updateTable = () => {
-			this.$http.get('/api/clients').then(result => {
+			this.$http.get('/api/clients', {
+				headers: {
+					Authorization: `Bearer ${this.getCookie("authToken")}`
+				}
+			}).then(result => {
 				let clients = result.body.clients;
 				let newClientIDs = clients.map(client => client.id);
 				
@@ -175,7 +185,11 @@ new Vue({
 			data.set("username", this.email);
 			data.set("password", this.password);
 
-			this.$http.post(`/api/users`, data).then((response) => {
+			this.$http.post(`/api/users`, data, {
+				headers: {
+					Authorization: `Bearer ${this.getCookie("authToken")}`
+				}
+			}).then((response) => {
 				if (response.body && response.body.token) {
 					this.$refs.modalUser.hide();
 				} else {
@@ -245,7 +259,11 @@ new Vue({
 			this.handleSubmitInitBulkInstall(bulkInstallInfo);
 		},
 		handleSubmitInitBulkInstall (bulkInstallInfo) {
-			axios.post('/api/bulk-install', bulkInstallInfo)
+			axios.post('/api/bulk-install', bulkInstallInfo, {
+				headers: {
+					Authorization: `Bearer ${this.getCookie("authToken")}`
+				}
+			})
 			.then(function (response) {
 				console.log(response);
 			})
@@ -278,7 +296,11 @@ new Vue({
 		handleSubmitTunnelCreation () {
 			let data = new FormData();
 			data.set('target_client_port', parseInt(this.targetClientPortToBeCreated))
-			this.$http.post(`/api/client/${this.targetClientId}`, data).then(response => {
+			this.$http.post(`/api/client/${this.targetClientId}`, data, {
+				headers: {
+					Authorization: `Bearer ${this.getCookie("authToken")}`
+				}
+			}).then(response => {
 				console.log(`Created Tunnel: \n${JSON.stringify(response.body, null, 3)}`);
 			});
 			

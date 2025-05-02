@@ -7,8 +7,11 @@ import (
 type Options struct {
 	Address             string           `hcl:"address" flagName:"address" flagSName:"a" flagDescribe:"IP address to listen" default:"0.0.0.0"`
 	Port                string           `hcl:"port" flagName:"port" flagSName:"p" flagDescribe:"Port number to liten" default:"8080"`
+	JoebotWebPortalHost string           `hcl:"joebot_web_portal_host" flagName:"joebot-web-portal-host" flagDescribe:"Joebot Web Portal Host" default:"localhost"`
+	JoebotWebPortalPort string           `hcl:"joebot_web_portal_port" flagName:"joebot-web-portal-port" flagDescribe:"Joebot Web Portal Port" default:"9090"`
 	PermitWrite         bool             `hcl:"permit_write" flagName:"permit-write" flagSName:"w" flagDescribe:"Permit clients to write to the TTY (BE CAREFUL)" default:"false"`
 	EnableBasicAuth     bool             `hcl:"enable_basic_auth" default:"false"`
+	EnableTokenAuth     bool             `hcl:"enable_token_auth" default:"true"`
 	Credential          string           `hcl:"credential" flagName:"credential" flagSName:"c" flagDescribe:"Credential for Basic Authentication (ex: user:pass, default disabled)" default:""`
 	EnableRandomUrl     bool             `hcl:"enable_random_url" flagName:"random-url" flagSName:"r" flagDescribe:"Add a random string to the URL" default:"false"`
 	RandomUrlLength     int              `hcl:"random_url_length" flagName:"random-url-length" flagDescribe:"Random URL length" default:"8"`
