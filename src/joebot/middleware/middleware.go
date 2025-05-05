@@ -8,6 +8,10 @@ import (
 
 func AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
+		if c.Path() == "/api/login" {
+			return next(c)
+		}
+
 		token := c.Request().Header.Get("Authorization")
 		if token == "" {
 			return c.JSON(http.StatusUnauthorized, map[string]string{

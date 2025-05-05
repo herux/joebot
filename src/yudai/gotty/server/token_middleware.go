@@ -49,7 +49,6 @@ func (server *Server) wrapTokenAuth(handler http.Handler) http.Handler {
 			}
 		}
 
-		fmt.Printf("isAuthorized: %v\n", isAuthorized)
 		if !isAuthorized {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return

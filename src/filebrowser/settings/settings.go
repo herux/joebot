@@ -42,6 +42,9 @@ type Server struct {
 	ResizePreview         bool   `json:"resizePreview"`
 	EnableExec            bool   `json:"enableExec"`
 	TypeDetectionByHeader bool   `json:"typeDetectionByHeader"`
+
+	JoebotWebPortalHost string `json:"joebotWebPortalHost"`
+	JoebotWebPortalPort string `json:"joebotWebPortalPort"`
 }
 
 // Clean cleans any variables that might need cleaning.

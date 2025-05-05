@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -54,7 +53,7 @@ func NewClient(serverIP string, serverPort int, serverWebPortalPort int, allowed
 	if logger == nil {
 		logger = logrus.New()
 	}
-	fmt.Println("Client NewClient: ", serverWebPortalPort)
+
 	client := &Client{}
 	client.Tags = tags
 	client.logger = logger
