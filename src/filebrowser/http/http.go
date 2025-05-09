@@ -6,6 +6,7 @@ import (
 
 	"github.com/gorilla/mux"
 
+	"github.com/filebrowser/filebrowser/v2/http/middleware"
 	"github.com/filebrowser/filebrowser/v2/settings"
 	"github.com/filebrowser/filebrowser/v2/storage"
 )
@@ -26,7 +27,7 @@ func NewHandler(
 
 	r := mux.NewRouter()
 	index, static := getStaticHandlers(store, server, assetsFs)
-
+	r.Use(middleware.AuthMiddleware(server))
 	// NOTE: This fixes the issue where it would redirect if people did not put a
 	// trailing slash in the end. I hate this decision since this allows some awful
 	// URLs https://www.gorillatoolkit.org/pkg/mux#Router.SkipClean

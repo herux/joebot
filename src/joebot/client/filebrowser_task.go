@@ -52,7 +52,7 @@ func (t *FilebrowserTask) Handle(body []byte, stream net.Conn) error {
 	if err != nil {
 		return err
 	}
-	filebrowserServer, err := StartFilebrowserService(strconv.Itoa(freePort))
+	filebrowserServer, err := StartFilebrowserService(strconv.Itoa(freePort), t.handleClient.serverIP, t.handleClient.serverWebPortalPort)
 	if err != nil {
 		return errors.Wrap(err, "Failed to create filebrowser server")
 	}
@@ -68,7 +68,7 @@ func (t *FilebrowserTask) Handle(body []byte, stream net.Conn) error {
 	return nil
 }
 
-func StartFilebrowserService(port string) (*http.Server, error) {
+func StartFilebrowserService(port string, joebotWebHost string, joebotWebPort int) (*http.Server, error) {
 	abs, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		return nil, errors.New("Unable To Get Scope")
@@ -117,6 +117,9 @@ func StartFilebrowserService(port string) (*http.Server, error) {
 		ResizePreview:         false,
 		EnableExec:            false,
 		TypeDetectionByHeader: false,
+
+		JoebotWebPortalHost: joebotWebHost,
+		JoebotWebPortalPort: strconv.Itoa(joebotWebPort),
 	}
 
 	imgSvc := img.New(1)

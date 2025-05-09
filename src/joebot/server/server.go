@@ -37,6 +37,8 @@ type Server struct {
 
 	ctx  context.Context
 	stop context.CancelFunc
+
+	UserRepo repository.UserRepository
 }
 
 func NewServer(logger *logrus.Logger) *Server {
@@ -94,19 +96,93 @@ func (server *Server) GetClientsList() models.ClientCollection {
 	return clientCollection
 }
 
-func (server *Server) GetAllUser() ([]*models.UserInfo, error) {
+type UserInfoResponse struct {
+	Username      string `json:"username"`
+	IsAdmin       bool   `json:"is_admin"`
+	IpWhitelisted string `json:"ip_whitelisted"`
+}
+
+func (server *Server) GetAllUser() ([]*UserInfoResponse, error) {
 	userRepo := repository.New(server.db)
 	userResp, err := userRepo.GetAll(context.Background())
 	if err != nil {
-		return []*models.UserInfo{}, err
+		return []*UserInfoResponse{}, err
 	}
 
-	return userResp, nil
+	userInfoResponses := make([]*UserInfoResponse, 0, len(userResp))
+	for i := range userResp {
+		userInfoResponses = append(userInfoResponses, &UserInfoResponse{
+			Username:      userResp[i].Username,
+			IsAdmin:       userResp[i].IsAdmin,
+			IpWhitelisted: userResp[i].IpWhitelisted,
+		})
+	}
+
+	return userInfoResponses, nil
 }
 
-func (server *Server) UserLogin(username, password string) (models.UserResponse, error) {
+func (server *Server) GetUserByToken(token string) (*UserInfoResponse, error) {
+	userRepo := repository.New(server.db)
+	userResp, err := userRepo.GetUserByToken(context.Background(), token)
+	if err != nil {
+		return nil, err
+	}
+
+	return &UserInfoResponse{
+		Username:      userResp.Username,
+		IsAdmin:       userResp.IsAdmin,
+		IpWhitelisted: userResp.IpWhitelisted,
+	}, nil
+}
+
+func (server *Server) GetUserIPWhitelisted(token string) ([]string, error) {
+	userRepo := repository.New(server.db)
+	userResp, err := userRepo.GetUserByToken(context.Background(), token)
+	if err != nil {
+		return nil, err
+	}
+
+	ipWhitelisted := userResp.IpWhitelisted
+	if ipWhitelisted == "" {
+		return nil, errors.New("No IP Whitelisted")
+	}
+
+	ipList := []string{}
+	for _, ip := range utils.SplitString(ipWhitelisted, ",") {
+		ipList = append(ipList, ip)
+	}
+
+	return ipList, nil
+}
+
+func (server *Server) CreateUser(user models.UserInfo) error {
+	userRepo := repository.New(server.db)
+	userResp, err := userRepo.GetUserByUsername(context.Background(), user.Username)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			// User not found, proceed to create
+			if err := userRepo.Create(context.Background(), &user); err != nil {
+				return errors.Wrap(err, "Failed to create user")
+			}
+			server.logger.Info("User Created: " + user.Username)
+			return nil
+		} else {
+			return errors.Wrap(err, "Error fetching user")
+		}
+	} else {
+		// User already exists
+		return errors.New("User already exists: " + userResp.Username)
+	}
+}
+
+func (server *Server) UserLogin(ipAddress string, username, password string) (models.UserResponse, error) {
 	userRepo := repository.New(server.db)
 	userResp, err := userRepo.GetUserByUserPassword(context.Background(), username, password)
+	if err != nil {
+		return models.UserResponse{}, err
+	}
+
+	err = userRepo.UpdateUserIPWhitelist(context.Background(), userResp.Username, ipAddress)
 	if err != nil {
 		return models.UserResponse{}, err
 	}
@@ -309,18 +385,20 @@ func (server *Server) InitDB() {
 		IpWhitelisted: "",
 	}
 	userRepo := repository.New(db)
-	user, err := userRepo.GetUserByUsername(context.Background(), adminUser.Username)
+	server.UserRepo = *userRepo
+	_, err = userRepo.GetUserByUsername(context.Background(), adminUser.Username)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			log.Println("Admin user not found, creating it...")
+			log.Printf("[INFO] Admin user '%s' not found. Proceeding to create...", adminUser.Username)
 			if err := userRepo.Create(context.Background(), &adminUser); err != nil {
-				log.Fatalf("Failed to create admin user: %v", err)
+				log.Fatalf("[ERROR] Failed to create admin user '%s': %v", adminUser.Username, err)
 			}
-			log.Println("Admin user created successfully")
+			log.Printf("[INFO] Admin user '%s' created successfully", adminUser.Username)
 		} else {
-			log.Fatalf("Error fetching admin user: %v", err)
+			log.Fatalf("[ERROR] Unexpected error while fetching admin user '%s': %v", adminUser.Username, err)
 		}
 	} else {
-		log.Printf("Admin user already exists: %+v", user)
+		log.Printf("[INFO] Admin user '%s' already exists", adminUser.Username)
 	}
+
 }

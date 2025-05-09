@@ -28,9 +28,10 @@ type Client struct {
 	conn    net.Conn
 	session *yamux.Session
 
-	serverIP          string
-	serverPort        int
-	reconnectInterval time.Duration
+	serverIP            string
+	serverPort          int
+	serverWebPortalPort int
+	reconnectInterval   time.Duration
 
 	allowedPortRangeLBound int
 	allowedPortRangeUBound int
@@ -48,7 +49,7 @@ type Client struct {
 	stop context.CancelFunc
 }
 
-func NewClient(serverIP string, serverPort int, allowedPortRangeLBound int, allowedPortRangeUBound int, tags []string, logger *logrus.Logger) *Client {
+func NewClient(serverIP string, serverPort int, serverWebPortalPort int, allowedPortRangeLBound int, allowedPortRangeUBound int, tags []string, logger *logrus.Logger) *Client {
 	if logger == nil {
 		logger = logrus.New()
 	}
@@ -58,6 +59,7 @@ func NewClient(serverIP string, serverPort int, allowedPortRangeLBound int, allo
 	client.logger = logger
 	client.serverIP = serverIP
 	client.serverPort = serverPort
+	client.serverWebPortalPort = serverWebPortalPort
 	client.reconnectInterval = 5 * time.Second
 
 	client.allowedPortRangeLBound = allowedPortRangeLBound
@@ -124,7 +126,7 @@ func (client *Client) Reconnect() {
 		client.logger.Info("Sleep Before Reconnecting")
 		time.Sleep(client.reconnectInterval)
 		client.logger.Info("Reconnecting...")
-		c := NewClient(client.serverIP, client.serverPort, client.allowedPortRangeLBound, client.allowedPortRangeUBound, client.Tags, client.logger)
+		c := NewClient(client.serverIP, client.serverPort, client.serverWebPortalPort, client.allowedPortRangeLBound, client.allowedPortRangeUBound, client.Tags, client.logger)
 		c.FilebrowserDefaultDir = client.FilebrowserDefaultDir
 		c.Start()
 	}(client)

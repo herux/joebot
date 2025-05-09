@@ -23,9 +23,8 @@ new Vue({
 		userFields: [
 			{ key: 'ID', label: 'ID', sortable: true, tdAttr: {style:"width:9%;word-break:break-all;word-wrap:break-word;"} },
 			{ key: 'Username', label: 'Username', sortable: true, tdAttr: {style:"width:9%;word-break:break-all;word-wrap:break-word;"} },
-			{ key: 'Password', label: 'Password', sortable: false, tdAttr: {style:"width:9%;word-break:break-all;word-wrap:break-word;"} },
-			{ key: 'IsAdmin', label: 'IsAdmin', sortable: false, tdAttr: {style:"width:9%;word-break:break-all;word-wrap:break-word;"} },
-			{ key: 'IpWhitelisted', label: 'IpWhitelisted', sortable: false, tdAttr: {style:"width:9%;word-break:break-all;word-wrap:break-word;"} },
+			{ key: 'IsAdmin', label: 'Admin', sortable: false, tdAttr: {style:"width:9%;word-break:break-all;word-wrap:break-word;"} },
+			{ key: 'IpWhitelisted', label: 'IP Whitelisted', sortable: false, tdAttr: {style:"width:9%;word-break:break-all;word-wrap:break-word;"} },
 		],
 		currentPage: 1,
 		perPage: 99999,
@@ -73,14 +72,24 @@ new Vue({
 		} else {
 			this.$nextTick(() => this.$refs.modalLogin.show());
 		}
+
 		const updateUserTable = () => {
-			this.$http.get('/api/users').then(result => {
+			const token = this.getCookie("authToken");
+			this.$http.get('/api/users', {
+				headers: {
+					Authorization: `Bearer ${token}`
+				}
+			}).then(result => {
 				this.userArray = result.body;
 			});
 		};
 
 		const updateTable = () => {
-			this.$http.get('/api/clients').then(result => {
+			this.$http.get('/api/clients', {
+				headers: {
+					Authorization: `Bearer ${this.getCookie("authToken")}`
+				}
+			}).then(result => {
 				let clients = result.body.clients;
 				let newClientIDs = clients.map(client => client.id);
 				
@@ -113,10 +122,13 @@ new Vue({
 			this.filter = captured[1] ? decodeURIComponent(captured[1]) : null;
 		}
 
-		updateTable();
-		setInterval(() => updateTable(), 1000);
-
-		updateUserTable();
+		// updateTable();
+		setInterval(() => { 
+			if (this.isLoggedIn){
+				updateTable();
+				updateUserTable();
+			}
+		}, 1000);
 	},
 	
 	methods: {
@@ -169,7 +181,21 @@ new Vue({
 			this.$refs.modalUser.show();
 		},
 		handleAddUserOk () {
+			let data = new FormData();
+			data.set("username", this.email);
+			data.set("password", this.password);
 
+			this.$http.post(`/api/users`, data, {
+				headers: {
+					Authorization: `Bearer ${this.getCookie("authToken")}`
+				}
+			}).then((response) => {
+				if (response.body && response.body.token) {
+					this.$refs.modalUser.hide();
+				} else {
+					this.loginError = "Add user failed";
+				}
+			});
 		},
 		bulk_install () {
 			this.isBulkIntallView = true;
@@ -233,7 +259,11 @@ new Vue({
 			this.handleSubmitInitBulkInstall(bulkInstallInfo);
 		},
 		handleSubmitInitBulkInstall (bulkInstallInfo) {
-			axios.post('/api/bulk-install', bulkInstallInfo)
+			axios.post('/api/bulk-install', bulkInstallInfo, {
+				headers: {
+					Authorization: `Bearer ${this.getCookie("authToken")}`
+				}
+			})
 			.then(function (response) {
 				console.log(response);
 			})
@@ -266,7 +296,11 @@ new Vue({
 		handleSubmitTunnelCreation () {
 			let data = new FormData();
 			data.set('target_client_port', parseInt(this.targetClientPortToBeCreated))
-			this.$http.post(`/api/client/${this.targetClientId}`, data).then(response => {
+			this.$http.post(`/api/client/${this.targetClientId}`, data, {
+				headers: {
+					Authorization: `Bearer ${this.getCookie("authToken")}`
+				}
+			}).then(response => {
 				console.log(`Created Tunnel: \n${JSON.stringify(response.body, null, 3)}`);
 			});
 			
@@ -287,14 +321,16 @@ new Vue({
 			data.set("password", this.password);
 
 			this.$http.post(`/api/login`, data).then((response) => {
-				console.log(`Login response: \n${JSON.stringify(response.body, null, 3)}`);
-				if (response.body && response.body.token) {
-					this.setCookie("authToken", response.body.token, 7); // Save token for 7 days
+				if (response.status === 200 && response.body && response.body.token) {
+					this.setCookie("authToken", response.body.token, 7); 
 					this.isLoggedIn = true;
 					this.$refs.modalLogin.hide();
 				} else {
 					this.loginError = "Login failed. Please check your credentials.";
 				}
+			}).catch((error) => {
+				this.loginError = "Login failed. Please check your credentials.";
+				console.error(error);
 			});
 		},
 		logout() {

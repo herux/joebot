@@ -187,52 +187,111 @@
 					</b-container>
 				</form>
 			</b-modal>
-			<b-modal id="modalUser" ref="modalUser" title="Add User" @ok="handleAddUserOk" size="l">
+			<b-modal id="modalUser" ref="modalUser" title="Add User" @ok="handleAddUserOk" size="lg" centered hide-footer>
 				<b-container fluid>
 					<form @submit.stop.prevent="handleAddUserOk">
-						<b-row>
-							<b-col sm="6">
-								<label for="email">Email</label>
-								<b-form-input type="text" placeholder="Email / Username" v-model="email"></b-form-input>
-							</b-col>
-						</b-row>
-						<b-row>
-							<b-col sm="6">
-								<label for="password">Password</label>
-								<b-form-input type="text" placeholder="Password" v-model="password"></b-form-input>
-							</b-col>
-						</b-row>
-						<b-row>
-							<b-col sm="6">
-								<b-form-checkbox v-model="isadmin">IsAdmin</b-form-checkbox>
-							</b-col>
-						</b-row>
+					<b-row class="mb-3">
+						<b-col sm="12">
+						<label for="email" class="form-label font-weight-bold">Username</label>
+						<b-form-input
+							id="email"
+							type="text"
+							placeholder="Enter username"
+							v-model="email"
+							class="shadow-sm"
+							required
+						/>
+						</b-col>
+					</b-row>
+
+					<b-row class="mb-3">
+						<b-col sm="12">
+						<label for="password" class="form-label font-weight-bold">Password</label>
+						<b-form-input
+							id="password"
+							type="password"
+							placeholder="Enter password"
+							v-model="password"
+							class="shadow-sm"
+							required
+						/>
+						</b-col>
+					</b-row>
+
+					<b-row class="mb-4">
+						<b-col sm="12">
+						<b-form-checkbox v-model="isadmin" class="font-weight-medium">
+							Grant admin privileges
+						</b-form-checkbox>
+						</b-col>
+					</b-row>
+
+					<b-row>
+						<b-col class="d-flex justify-content-end">
+						<b-button variant="secondary" @click="$refs.modalUser.hide()">Cancel</b-button>
+						<b-button variant="primary" type="submit" class="ml-2">Add User</b-button>
+						</b-col>
+					</b-row>
 					</form>
 				</b-container>
 			</b-modal>
-			<b-modal id="modalLogin" ref="modalLogin" title="Login" @ok="handleLoginOk" :no-close-on-backdrop="true">
+			<b-modal
+				id="modalLogin"
+				ref="modalLogin"
+				title="Login"
+				@ok="handleLoginOk"
+				:no-close-on-backdrop="true"
+				centered
+				hide-footer
+				>
 				<b-container fluid>
 					<form @submit.stop.prevent="handleLoginOk">
-						<b-row>
-							<b-col sm="6">
-								<label for="email">Email</label>
-								<b-form-input type="text" placeholder="Email / Username" v-model="email"></b-form-input>
-							</b-col>
-						</b-row>
-						<b-row>
-							<b-col sm="6">
-								<label for="password">Password</label>
-								<b-form-input type="password" placeholder="Password" v-model="password"></b-form-input>
-							</b-col>
-						</b-row>
-						<b-row v-if="loginError">
-							<b-col>
-							  <p style="color: red;">{{ loginError }}</p> 
-							</b-col>
-						</b-row>
+					<b-row class="mb-3">
+						<b-col sm="12">
+						<label for="loginEmail" class="form-label font-weight-bold">Username</label>
+						<b-form-input
+							id="loginEmail"
+							type="text"
+							placeholder="Enter username"
+							v-model="email"
+							class="shadow-sm"
+							required
+						/>
+						</b-col>
+					</b-row>
+
+					<b-row class="mb-3">
+						<b-col sm="12">
+						<label for="loginPassword" class="form-label font-weight-bold">Password</label>
+						<b-form-input
+							id="loginPassword"
+							type="password"
+							placeholder="Enter password"
+							v-model="password"
+							class="shadow-sm"
+							required
+						/>
+						</b-col>
+					</b-row>
+
+					<b-row v-if="loginError" class="mb-3">
+						<b-col sm="12">
+						<b-alert variant="danger" show>
+							{{ loginError }}
+						</b-alert>
+						</b-col>
+					</b-row>
+
+					<b-row>
+						<b-col class="d-flex justify-content-end">
+						<b-button variant="secondary" @click="$refs.modalLogin.hide()">Cancel</b-button>
+						<b-button variant="primary" type="submit" class="ml-2">Login</b-button>
+						</b-col>
+					</b-row>
 					</form>
 				</b-container>
 			</b-modal>
+
 		</b-container>
 
 		<script type="text/javascript" src="app.js"></script>

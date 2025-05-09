@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/harmonicinc-com/joebot/client"
+	joebot_middleware "github.com/harmonicinc-com/joebot/middleware"
 	"github.com/harmonicinc-com/joebot/models"
 	"github.com/harmonicinc-com/joebot/server"
 
@@ -24,12 +25,11 @@ var (
 	serverCommand = app.Command("server", "Server Mode")
 	serverPort    = serverCommand.Flag("port", "Port For Listening Slave Machine, Default = 13579").Default("13579").Short('p').Int()
 	webPortalPort = serverCommand.Flag("web-portal-port", "Port For The Web Portal, Default = 8080").Default("8080").Short('w').Int()
-	username      = serverCommand.Flag("user", "Username for login the web portal").String()
-	password      = serverCommand.Flag("pw", "Password for login the web portal").String()
 
 	clientCommand                = app.Command("client", "Client Mode")
 	cServerIP                    = clientCommand.Arg("ip", "Server IP").Required().String()
 	cServerPort                  = clientCommand.Flag("port", "Server Port, Default=13579").Default("13579").Short('p').Int()
+	cwebPortalPort               = clientCommand.Flag("web-portal-port", "Web Portal Port, Default=8080").Default("8080").Short('w').Int()
 	cAllowedPortRangeLBound      = clientCommand.Flag("allowed-port-lower-bound", "Lower Bound Of Allowed Port Range").Default("0").Short('l').Int()
 	cAllowedPortRangeUBound      = clientCommand.Flag("allowed-port-upper-bound", "Upper Bound Of Allowed Port Range").Default("65535").Short('u').Int()
 	cTags                        = clientCommand.Flag("tag", "Tags").Strings()
@@ -49,20 +49,15 @@ func main() {
 		e := echo.New()
 		v1 := e.Group("/api")
 
-		if username != nil && password != nil && *username != "" && *password != "" {
-			v1.Use(middleware.BasicAuth(func(user, pw string, c echo.Context) (bool, error) {
-				if user == *username && pw == *password {
-					return true, nil
-				}
-				return false, nil
-			}))
-		}
 		webPortalAssetsFS := WebPortalAssetsFS()
 
 		v1.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 			AllowOrigins: []string{"*"},
 			AllowMethods: []string{echo.GET, echo.HEAD, echo.PUT, echo.PATCH, echo.POST, echo.DELETE},
 		}))
+
+		v1.Use(joebot_middleware.AuthMiddleware)
+
 		e.GET("/", func(c echo.Context) error {
 			f, err := webPortalAssetsFS.Open("index.html")
 			if err != nil {
@@ -88,12 +83,32 @@ func main() {
 
 			return c.JSON(http.StatusOK, res)
 		})
-		v1.POST("/login", func(c echo.Context) error {
-			username, password := c.FormValue("username"), c.FormValue("password")
-			res, err := s.UserLogin(username, password)
+		v1.GET("/users/ip-whitelisted", func(c echo.Context) error {
+			token := c.Get("token").(string)
+			res, err := s.GetUserIPWhitelisted(token)
 			if err != nil {
 				return c.JSON(http.StatusBadRequest, err)
 			}
+
+			return c.JSON(http.StatusOK, res)
+		})
+		v1.POST("/users", func(c echo.Context) error {
+			json := models.UserInfo{}
+			if err := c.Bind(&json); err != nil {
+				return err
+			}
+			if err := s.CreateUser(json); err != nil {
+				return c.JSON(http.StatusBadRequest, err)
+			}
+			return c.JSON(http.StatusOK, json)
+		})
+		v1.POST("/login", func(c echo.Context) error {
+			username, password := c.FormValue("username"), c.FormValue("password")
+			res, err := s.UserLogin(c.RealIP(), username, password)
+			if err != nil {
+				return c.JSON(http.StatusBadRequest, err)
+			}
+
 			return c.JSON(http.StatusOK, res)
 		})
 		v1.POST("/client/:id", func(c echo.Context) error {
@@ -135,7 +150,7 @@ func main() {
 	case clientCommand.FullCommand():
 		wg := &sync.WaitGroup{}
 		wg.Add(1)
-		c := client.NewClient(*cServerIP, *cServerPort, *cAllowedPortRangeLBound, *cAllowedPortRangeUBound, *cTags, nil)
+		c := client.NewClient(*cServerIP, *cServerPort, *cwebPortalPort, *cAllowedPortRangeLBound, *cAllowedPortRangeUBound, *cTags, nil)
 		c.FilebrowserDefaultDir = *cFilebrowserDefaultDirectory
 		c.Start()
 		wg.Wait()
