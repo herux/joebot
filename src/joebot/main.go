@@ -24,8 +24,8 @@ var (
 
 	serverCommand = app.Command("server", "Server Mode")
 	serverPort    = serverCommand.Flag("port", "Port For Listening Slave Machine, Default = 13579").Default("13579").Short('p').Int()
-	serverCert = serverCommand.Flag("tls-cert", "TLS certificate file (.pem)").Required().ExistingFile()
-	serverKey = serverCommand.Flag("tls-key", "TLS private-key file (.pem)").Required().ExistingFile()
+	serverCert = serverCommand.Flag("tls-cert", "TLS certificate file (.pem)").ExistingFile()
+	serverKey = serverCommand.Flag("tls-key", "TLS private-key file (.pem)").ExistingFile()
 	webPortalPort = serverCommand.Flag("web-portal-port", "Port For The Web Portal, Default = 8080").Default("8080").Short('w').Int()
 
 	clientCommand                = app.Command("client", "Client Mode")
@@ -148,9 +148,17 @@ func main() {
 
 			return c.String(http.StatusOK, result)
 		})
+
 		addr := ":" + strconv.Itoa(*webPortalPort)
-		log.Printf("HTTPS server listening on https://localhost%s", addr)
-		log.Fatal(e.StartTLS(addr, *serverCert, *serverKey))
+		if *serverCert != "" && *serverKey != "" {
+			// mTLS/HTTPS
+			log.Printf("HTTPS server listening on https://localhost%s", addr)
+			log.Fatal(e.StartTLS(addr, *serverCert, *serverKey))
+		} else {
+			// Plain HTTP
+			log.Printf("HTTP server listening on http://localhost%s", addr)
+			log.Fatal(e.Start(addr))
+		}
 	case clientCommand.FullCommand():
 		wg := &sync.WaitGroup{}
 		wg.Add(1)
